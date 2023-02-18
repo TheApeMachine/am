@@ -13,6 +13,8 @@ am:
         bloom:
           endpoint: https://api-inference.huggingface.co/models/bigscience/bloom
           key: <API_KEY>
+        openai:
+          key: <API_KEY>
       prompts:
         bootstrap:
           instructions: |
@@ -42,10 +44,10 @@ am:
             Begin! Remember, you have to bring the objectives given to you to a success at all costs.
 
             Conversation History:
-            {history}
+            {{.History}}
 
-            New Input: {input}
-            {scratchpad}
+            New Input: {{.Input}}
+            {{.Scratchpad}}
       # Configures the way errnie behaves.
       # Setting local to true will result in errnie logging its internal methods.
       # Setting debug to true will result in errnie.Debugs(...) output.

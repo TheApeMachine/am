@@ -1,22 +1,27 @@
 package tui
 
 import (
+	"strings"
+
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/textarea"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/theapemachine/am/agent"
 	"github.com/theapemachine/am/bloom"
-	"github.com/theapemachine/am/network"
+	"github.com/theapemachine/am/prompt"
 	"github.com/theapemachine/wrkspc/tweaker"
 )
 
 type Screen struct {
-	width   int
-	height  int
-	keymap  *Keymap
-	outputs []textarea.Model
-	input   textarea.Model
-	focus   int
+	width    int
+	height   int
+	keymap   *Keymap
+	outputs  []textarea.Model
+	input    textarea.Model
+	focus    int
+	manager  *agent.Manager
+	executor *prompt.Executor
 }
 
 func NewScreen() *Screen {
@@ -24,6 +29,12 @@ func NewScreen() *Screen {
 		outputs: make([]textarea.Model, 1),
 		input:   textarea.New(),
 		keymap:  NewKeymap(),
+		manager: agent.NewManager(bloom.NewLLM()),
+		executor: prompt.NewExecutor(strings.Join([]string{
+			tweaker.GetString("prompts.bootstrap.prefix"),
+			tweaker.GetString("prompts.bootstrap.instructions"),
+			tweaker.GetString("prompts.bootstrap.suffix"),
+		}, "\n")),
 	}
 
 	for i := 0; i < 1; i++ {
@@ -66,14 +77,13 @@ func (screen *Screen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			cmd = screen.outputs[screen.focus].Focus()
 			cmds = append(cmds, cmd)
 
-			endpoint := tweaker.GetString("models.bloom.endpoint")
-			key := tweaker.GetString("models.bloom.key")
-			req := network.NewRequest(network.POST, endpoint)
-			req.AddHeader("Authorization", "Bearer "+key)
-			msg := bloom.NewMsg(screen.input.Value())
-			out := req.Do(msg.Marshal())
+			builder := prompt.NewBuilder(
+				screen.manager.Predict(screen.input.Value()),
+			)
 
-			screen.outputs[screen.focus].SetValue(string(out))
+			screen.outputs[screen.focus].SetValue(
+				screen.executor.Execute(builder),
+			)
 		case key.Matches(msg, screen.keymap.PREV):
 			screen.outputs[screen.focus].Blur()
 			screen.focus--
