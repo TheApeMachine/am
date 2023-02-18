@@ -1,0 +1,92 @@
+program: am
+
+# Configuration for the program.
+am:
+  # The current stage we are running the program under.
+  stage: development
+
+  # Stage specific configuration values.
+  stages:
+    # When stage is set to development, these values are used.
+    development:
+      models:
+        bloom:
+          endpoint: https://api-inference.huggingface.co/models/bigscience/bloom
+          key: <API_KEY>
+      prompts:
+        bootstrap:
+          instructions: |
+            To compose a new Agent use the following format:
+
+            Objective: objective you must achieve
+            Thought: you should always think about what to do
+            Model: the large language model most suitable to the objective
+            Tools: the tools needed to be made available to the large language model
+            Prompt: the instruction to the new Agent instance, optimized for detail, clarity, and presicion
+          prefix: |
+            You are a Large Language Model designed to dynamically compose AI Agents from a set of Building Blocks.
+            An Agent is composed by combining a Large Language Model, a selection of Tools to interface with the World, and a Prompt.
+
+            The following building blocks are available:
+
+            Large Language Models:
+              text-ada-001: good at parsing text, simple classification, address correction, keywords.
+              text-babbage-001: good at moderate classification, semantic search classification.
+              text-curie-001: language translation, complex classification, text sentiment, summarization.
+              text-davinci-003: complex intent, cause and effect, summarization for audience.
+
+            Tools:
+              chrome: a headless browser that takes javascript as an input, runs it in the developer console, and returns the output.
+              docker: a running container daemon that can be used to pull docker images, build them, and run them.
+          suffix: |
+            Begin! Remember, you have to bring the objectives given to you to a success at all costs.
+
+            Conversation History:
+            {history}
+
+            New Input: {input}
+            {scratchpad}
+      # Configures the way errnie behaves.
+      # Setting local to true will result in errnie logging its internal methods.
+      # Setting debug to true will result in errnie.Debugs(...) output.
+      # Setting trace to true will result in errnie.Trace() output.
+      errnie:
+        local: false
+        debug: true
+        trace: true
+        break: false
+
+      metrics:
+        pyroscope:
+          endpoint: "http://localhost:4040"
+
+      # Configuration values for twoface.
+      twoface:
+        # Configuration values for worker pools.
+        pool:
+          # Set pool autoscaling value.
+          # Use workers: 0 on the next configuration value to get autoscaling that
+          # scales up from 0 and down to 0 when needed. Any other value for
+          # the workers setting will result in a "floor" of that value for the
+          # worker pool.
+          autoscaling: true
+          # Set the size of the worker pool (number of goroutines).
+          # Possible values:
+          #   - cores       (will use runtime.NumCPU())
+          #   - threads     (will use runtime.NumCPU() * 2)
+          #   - <n>         (where <n> is any integer)
+          #   - cores*<n>   (will use runtime.NumCPU() * <n>)
+          #   - threads*<n> (will use runtime.NumCPU() * <n>)
+          workers: threads
+          job:
+            # The buffer value to use for the job channel.
+            # This allows jobs to be queued and prevents job scheduling to be a
+            # blocking operation when all workers are busy.
+            buffer: 256
+
+      s3:
+        key: minioadmin
+        secret: minioadmin
+        region: us-east-2
+        bucket: wrkspc
+        endpoint: "http://127.0.0.1:9000"
