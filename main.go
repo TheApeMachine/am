@@ -6,5 +6,6 @@ import (
 )
 
 func main() {
+	errnie.Trace()
 	errnie.Handles(cmd.Execute())
 }

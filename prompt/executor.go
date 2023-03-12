@@ -9,17 +9,20 @@ import (
 
 type Executor struct {
 	tmpl *template.Template
-	buf  *bytes.Buffer
 }
 
 func NewExecutor(prompt string) *Executor {
+	errnie.Trace()
+
 	tmpl, err := template.New("prompt").Parse(prompt)
 	errnie.Handles(err)
 
-	return &Executor{tmpl, bytes.NewBuffer([]byte{})}
+	return &Executor{tmpl}
 }
 
 func (executor *Executor) Execute(builder *Builder) string {
-	executor.tmpl.Execute(executor.buf, builder)
-	return executor.buf.String()
+	errnie.Trace()
+	var buf bytes.Buffer
+	errnie.Handles(executor.tmpl.Execute(&buf, builder))
+	return buf.String()
 }

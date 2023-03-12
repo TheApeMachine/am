@@ -8,8 +8,7 @@ import (
 func NewTextArea() textarea.Model {
 	ta := textarea.New()
 	ta.Prompt = ""
-	ta.Placeholder = "AI Output..."
-	ta.ShowLineNumbers = true
+	ta.ShowLineNumbers = false
 	ta.Cursor.Style = cursorStyle
 	ta.FocusedStyle.Placeholder = focusedPlaceholderStyle
 	ta.BlurredStyle.Placeholder = placeholderstyle

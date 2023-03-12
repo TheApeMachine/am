@@ -1,5 +1,7 @@
 package agent
 
+import "github.com/wrk-grp/errnie"
+
 /*
 Select implements the Tool interface to allow one large language model
 to determine which large larguage model should perform the current
@@ -13,6 +15,8 @@ type Select struct {
 }
 
 func NewSelect(manager *LLM) *Select {
+	errnie.Trace()
+
 	return &Select{
 		manager: manager,
 	}

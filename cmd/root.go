@@ -10,7 +10,6 @@ import (
 	"github.com/spf13/cobra/doc"
 	"github.com/spf13/viper"
 	"github.com/theapemachine/wrkspc/brazil"
-	"github.com/theapemachine/wrkspc/tweaker"
 	"github.com/wrk-grp/errnie"
 )
 
@@ -73,8 +72,8 @@ It also automatically generates the CLI documentation for wrkspc.
 */
 func initConfig() {
 	// Set verbosity level for errnie.
-	errnie.Tracing(tweaker.GetBool("errnie.trace"))
-	errnie.Debugging(tweaker.GetBool("errnie.debug"))
+	errnie.Tracing(true)
+	errnie.Debugging(true)
 
 	errnie.Trace()
 

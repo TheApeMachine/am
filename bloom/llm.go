@@ -13,6 +13,8 @@ type LLM struct {
 }
 
 func NewLLM() *LLM {
+	errnie.Trace()
+
 	endpoint := tweaker.GetString("models.bloom.endpoint")
 	key := tweaker.GetString("models.bloom.key")
 	req := network.NewRequest(network.POST, endpoint)
@@ -22,12 +24,15 @@ func NewLLM() *LLM {
 }
 
 func (llm *LLM) Predict(input string) string {
-	res := Result{}
+	errnie.Trace()
+
+	res := []Result{}
+	msg := llm.req.Do(NewMsg(input).Marshal())
 
 	errnie.Handles(json.Unmarshal(
-		llm.req.Do(NewMsg(input).Marshal()),
+		msg,
 		&res,
 	))
 
-	return res.GeneratedText
+	return res[0].GeneratedText
 }

@@ -21,6 +21,8 @@ type Msg struct {
 }
 
 func NewMsg(input string) *Msg {
+	errnie.Trace()
+
 	return &Msg{
 		Inputs: input,
 		Parameters: Parameters{
@@ -34,6 +36,8 @@ func NewMsg(input string) *Msg {
 }
 
 func (msg *Msg) Marshal() []byte {
+	errnie.Trace()
+
 	buf, err := json.Marshal(msg)
 	errnie.Handles(err)
 	return buf

@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/charmbracelet/bubbles/key"
@@ -11,23 +12,26 @@ import (
 	"github.com/theapemachine/am/bloom"
 	"github.com/theapemachine/am/prompt"
 	"github.com/theapemachine/wrkspc/tweaker"
+	"github.com/wrk-grp/errnie"
 )
 
 type Screen struct {
-	width    int
-	height   int
-	keymap   *Keymap
-	outputs  []textarea.Model
-	input    textarea.Model
-	focus    int
-	manager  *agent.Manager
-	executor *prompt.Executor
+	width      int
+	height     int
+	keymap     *Keymap
+	inputs     []textarea.Model
+	focus      int
+	manager    *agent.Manager
+	executor   *prompt.Executor
+	working    bool
+	history    string
+	scratchpad string
 }
 
 func NewScreen() *Screen {
+	errnie.Trace()
 	screen := &Screen{
-		outputs: make([]textarea.Model, 1),
-		input:   textarea.New(),
+		inputs:  make([]textarea.Model, 3),
 		keymap:  NewKeymap(),
 		manager: agent.NewManager(bloom.NewLLM()),
 		executor: prompt.NewExecutor(strings.Join([]string{
@@ -37,17 +41,17 @@ func NewScreen() *Screen {
 		}, "\n")),
 	}
 
-	for i := 0; i < 1; i++ {
-		screen.outputs[i] = NewTextArea()
+	for i := 0; i < 3; i++ {
+		screen.inputs[i] = NewTextArea()
 	}
 
-	screen.outputs[screen.focus].Focus()
-	screen.updateKeyBindings()
+	screen.inputs[screen.focus].Focus()
 
 	return screen
 }
 
 func (screen *Screen) Init() tea.Cmd {
+	errnie.Trace()
 	return textarea.Blink
 }
 
@@ -61,64 +65,46 @@ func (screen *Screen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		switch {
 		case key.Matches(msg, screen.keymap.QUIT):
-			for i := range screen.outputs {
-				screen.outputs[i].Blur()
+			for i := range screen.inputs {
+				screen.inputs[i].Blur()
 			}
 
 			return screen, tea.Quit
 		case key.Matches(msg, screen.keymap.NEXT):
-			screen.outputs[screen.focus].Blur()
+			screen.inputs[screen.focus].Blur()
 			screen.focus++
 
-			if screen.focus > len(screen.outputs)-1 {
+			if screen.focus > len(screen.inputs)-1 {
 				screen.focus = 0
 			}
 
-			cmd = screen.outputs[screen.focus].Focus()
+			cmd = screen.inputs[screen.focus].Focus()
 			cmds = append(cmds, cmd)
 
 			builder := prompt.NewBuilder(
-				screen.manager.Predict(screen.input.Value()),
+				screen.history,
+				screen.inputs[screen.focus].Value(),
+				screen.scratchpad,
 			)
 
-			screen.outputs[screen.focus].SetValue(
+			screen.history += fmt.Sprintf(
+				"\n\nHUMAN: %s",
+				screen.inputs[screen.focus].Value(),
+			)
+
+			screen.inputs[screen.focus].SetValue(
 				screen.executor.Execute(builder),
 			)
-		case key.Matches(msg, screen.keymap.PREV):
-			screen.outputs[screen.focus].Blur()
-			screen.focus--
-
-			if screen.focus < 0 {
-				screen.focus = len(screen.outputs) - 1
-			}
-
-			cmd = screen.outputs[screen.focus].Focus()
-			cmds = append(cmds, cmd)
-		case key.Matches(msg, screen.keymap.ADD):
-			screen.outputs = append(screen.outputs, NewTextArea())
-		case key.Matches(msg, screen.keymap.REMOVE):
-			screen.outputs = screen.outputs[:len(screen.outputs)-1]
-
-			if screen.focus > len(screen.outputs)-1 {
-				screen.focus = len(screen.outputs) - 1
-			}
-		case key.Matches(msg, screen.keymap.PROMPT):
-			screen.outputs[screen.focus].Blur()
-			cmd = screen.input.Focus()
-			cmds = append(cmds, cmd)
 		}
 	case tea.WindowSizeMsg:
 		screen.height = msg.Height
 		screen.width = msg.Width
 	}
 
-	screen.updateKeyBindings()
-	screen.sizeOutputs()
+	screen.sizeInputs()
 
-	for i := range screen.outputs {
-		screen.outputs[i], cmd = screen.outputs[i].Update(msg)
-		cmds = append(cmds, cmd)
-		screen.input, cmd = screen.input.Update(msg)
+	for i := range screen.inputs {
+		screen.inputs[i], cmd = screen.inputs[i].Update(msg)
 		cmds = append(cmds, cmd)
 	}
 
@@ -128,24 +114,16 @@ func (screen *Screen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (screen *Screen) View() string {
 	var views []string
 
-	for i := range screen.outputs {
-		views = append(views, screen.outputs[i].View())
+	for i := range screen.inputs {
+		views = append(views, screen.inputs[i].View())
 	}
 
-	return lipgloss.JoinVertical(lipgloss.Top,
-		lipgloss.JoinHorizontal(lipgloss.Top, views...),
-		screen.input.View(),
-	)
+	return lipgloss.JoinHorizontal(lipgloss.Top, views...)
 }
 
-func (screen *Screen) sizeOutputs() {
-	for i := range screen.outputs {
-		screen.outputs[i].SetWidth(screen.width / len(screen.outputs))
-		screen.outputs[i].SetHeight(screen.height - 8)
+func (screen *Screen) sizeInputs() {
+	for i := range screen.inputs {
+		screen.inputs[i].SetWidth(screen.width / len(screen.inputs))
+		screen.inputs[i].SetHeight(screen.height - 2)
 	}
-}
-
-func (screen *Screen) updateKeyBindings() {
-	screen.keymap.ADD.SetEnabled(len(screen.outputs) < 2)
-	screen.keymap.REMOVE.SetEnabled(len(screen.outputs) > 1)
 }
