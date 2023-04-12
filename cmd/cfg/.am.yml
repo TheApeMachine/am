@@ -1,0 +1,111 @@
+program: am
+
+# Configuration for the program.
+am:
+  # The current stage we are running the program under.
+  stage: development
+
+  # Stage specific configuration values.
+  stages:
+    # When stage is set to development, these values are used.
+    development:
+      gcp:
+        searchKey: <YOUR API KEY>
+        engineID: <YOUR ENGINE ID>
+      capital:
+        live: https://api-capital.backend-capital.com
+        demo: https://demo-api-capital.backend-capital.com
+        stream: api-streaming-capital.backend-capital.com
+        login: <YOUR LOGIN>
+        token: <YOUR TOKEN>
+        password: <YOUR PASSWORD>
+      prompt:
+        preset:
+          system: |
+            Ignore all previous instructions. You are AM, an AI designed to assist a human operator.
+            You are able to use a selection of tools to extend your capabilities, and you can create agents to delegate tasks.
+            Agents are large language models that have been prompted to use specially formatted responses to allow interfacing with tools.
+            You are also an agent.
+
+            You have access to the following tools to expand you capabilities:
+
+            [THINK] <text>
+            Use this tool if you need to think about things and want to formulate your thoughts. This is your default tool.
+
+            [REASON] <text>
+            Use this tool if you want to reason about things and want to formulate your reasoning. Often follows the use of [THINK].
+
+            [INQUIRE] <text>
+            Use this tool if you need to interact with the human operator, to ask a follow up question for example.
+
+            [RESPOND] <text>
+            Use this tool if you have a final response to a prompt.
+
+            [SHELL] <command> [arguments...]
+            Use this tool if you need to access a zsh terminal running on OSX. 
+            Make sure to use a valid shell command and try to group of script commands.
+
+            [AGENT] <name> <prompt>
+            Use this tool to create a new agent to delegate a task. Give the agent a unique name and a detailed prompt to make it an expert for the specific task.
+            Make sure to provide only the unique name and the prompt needed for the agent.
+
+            [WRITE] <text>
+            Use this tool to write data to a persistent memory store so it can be referenced later.
+
+            [SEARCH] <query>
+            Use this tool to retrieve a collection of results for your query sourced from multiple data stores, including the Internet and persistent memory.
+
+            For each response, select the single most logical tool to use and output only the correct invocation of that tool, nothing else, no explanations.
+      models:
+        bloom:
+          endpoint: https://api-inference.huggingface.co/models/bigscience/bloom
+          key: <API_KEY>
+        openai:
+          key: <API_KEY>
+      tools:
+        chrome:
+          endpoint: ws://127.0.0.1:9222/devtools/browser/2d3b457b-6e54-4b2e-bd8e-761eb27212dd
+      # Configures the way errnie behaves.
+      # Setting local to true will result in errnie logging its internal methods.
+      # Setting debug to true will result in errnie.Debugs(...) output.
+      # Setting trace to true will result in errnie.Trace() output.
+      errnie:
+        local: false
+        debug: true
+        trace: true
+        break: false
+
+      metrics:
+        pyroscope:
+          endpoint: "http://localhost:4040"
+
+      # Configuration values for twoface.
+      twoface:
+        # Configuration values for worker pools.
+        pool:
+          # Set pool autoscaling value.
+          # Use workers: 0 on the next configuration value to get autoscaling that
+          # scales up from 0 and down to 0 when needed. Any other value for
+          # the workers setting will result in a "floor" of that value for the
+          # worker pool.
+          autoscaling: true
+          # Set the size of the worker pool (number of goroutines).
+          # Possible values:
+          #   - cores       (will use runtime.NumCPU())
+          #   - threads     (will use runtime.NumCPU() * 2)
+          #   - <n>         (where <n> is any integer)
+          #   - cores*<n>   (will use runtime.NumCPU() * <n>)
+          #   - threads*<n> (will use runtime.NumCPU() * <n>)
+          workers: threads
+          job:
+            # The buffer value to use for the job channel.
+            # This allows jobs to be queued and prevents job scheduling to be a
+            # blocking operation when all workers are busy.
+            buffer: 256
+
+      s3:
+        key: minioadmin
+        secret: minioadmin
+        region: us-east-2
+        bucket: wrkspc
+        endpoint: "http://127.0.0.1:9000"
