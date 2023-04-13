@@ -2,6 +2,7 @@ package bloom
 
 import (
 	"encoding/json"
+	"fmt"
 
 	"github.com/theapemachine/am/network"
 	"github.com/theapemachine/wrkspc/tweaker"
@@ -19,20 +20,37 @@ func NewLLM() *LLM {
 	key := tweaker.GetString("models.bloom.key")
 	req := network.NewRequest(network.POST, endpoint)
 	req.AddHeader("Authorization", "Bearer "+key)
+	req.AddHeader("Content-Type", "application/json")
 
 	return &LLM{req}
 }
 
-func (llm *LLM) Predict(input string) string {
+func (llm *LLM) Predict(input []map[string]string) chan string {
 	errnie.Trace()
 
-	res := []Result{}
-	msg := llm.req.Do(NewMsg(input).Marshal())
+	out := make(chan string)
 
-	errnie.Handles(json.Unmarshal(
-		msg,
-		&res,
-	))
+	go func() {
+		defer close(out)
 
-	return res[0].GeneratedText
+		res := []Result{}
+		msgs := ""
+
+		for _, in := range input {
+			for key, val := range in {
+				msgs += fmt.Sprintf("%s: %s\n", key, val)
+			}
+		}
+
+		msg := llm.req.Do(NewMsg(msgs).Marshal())
+
+		errnie.Handles(json.Unmarshal(
+			msg,
+			&res,
+		))
+
+		out <- res[0].GeneratedText
+	}()
+
+	return out
 }

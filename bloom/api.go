@@ -7,12 +7,13 @@ import (
 )
 
 type Parameters struct {
-	DoSample      bool `json:"do_sample"`
-	EarlyStopping bool `json:"early_stopping"`
-	LengthPenalty int  `json:"length_penalty"`
-	MaxNewTokens  int  `json:"max_new_tokens"`
-	MaxTime       int  `json:"max_time"`
-	Seed          int  `json:"seed"`
+	DoSample       bool `json:"do_sample"`
+	EarlyStopping  bool `json:"early_stopping"`
+	LengthPenalty  int  `json:"length_penalty"`
+	MaxNewTokens   int  `json:"max_new_tokens"`
+	MaxTime        int  `json:"max_time"`
+	Seed           int  `json:"seed"`
+	ReturnFullText bool `json:"return_full_text"`
 }
 
 type Msg struct {
@@ -26,11 +27,12 @@ func NewMsg(input string) *Msg {
 	return &Msg{
 		Inputs: input,
 		Parameters: Parameters{
-			DoSample:      true,
-			EarlyStopping: false,
-			LengthPenalty: 0,
-			MaxNewTokens:  250,
-			MaxTime:       120,
+			DoSample:       false,
+			EarlyStopping:  true,
+			LengthPenalty:  0,
+			MaxNewTokens:   25,
+			MaxTime:        120,
+			ReturnFullText: false,
 		},
 	}
 }

@@ -44,9 +44,12 @@ func (search *Search) Use() string {
 		return err.Error()
 	}
 
+	search.output += "SEARCH RESULTS:\n\n"
+
 	for i, result := range resp.Items {
-		search.output += fmt.Sprintf("#%d: %s\n", i+1, result.Title)
+		search.output += fmt.Sprintf("%d. %s\n", i+1, result.Title)
 		search.output += fmt.Sprintf("%s\n", result.Snippet)
+		search.output += fmt.Sprintf("%s\n\n", result.Link)
 	}
 
 	return search.output

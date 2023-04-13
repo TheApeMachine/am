@@ -25,6 +25,8 @@ type Request struct {
 }
 
 func NewRequest(t MethodType, endpoint string) *Request {
+	errnie.Trace()
+
 	return &Request{
 		method:   t,
 		endpoint: endpoint,
@@ -35,10 +37,14 @@ func NewRequest(t MethodType, endpoint string) *Request {
 }
 
 func (request *Request) AddHeader(key, value string) {
+	errnie.Trace()
+	errnie.Debugs("AddHeader <-", key, value)
 	request.headers[key] = value
 }
 
 func (request *Request) Do(payload []byte) []byte {
+	errnie.Trace()
+
 	hc := &fasthttp.HostClient{
 		Addr:  request.getAddr(),
 		IsTLS: true,
@@ -56,9 +62,12 @@ func (request *Request) Do(payload []byte) []byte {
 	request.handle.SetBody(payload)
 	errnie.Handles(hc.Do(request.handle, request.response))
 
-	return request.response.Body()
+	res := request.response.Body()
+
+	return res
 }
 
 func (request *Request) getAddr() string {
+	errnie.Trace()
 	return strings.Split(request.endpoint, "/")[2] + ":443"
 }

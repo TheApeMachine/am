@@ -73,7 +73,7 @@ It also automatically generates the CLI documentation for wrkspc.
 */
 func initConfig() {
 	// Set verbosity level for errnie.
-	errnie.Tracing(false)
+	errnie.Tracing(true)
 	errnie.Debugging(true)
 
 	errnie.Trace()

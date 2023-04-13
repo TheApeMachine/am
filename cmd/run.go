@@ -9,16 +9,11 @@ import (
 	gogpt "github.com/sashabaranov/go-openai"
 	"github.com/spf13/cobra"
 	"github.com/theapemachine/am/agent"
-	"github.com/theapemachine/am/openai"
+	"github.com/theapemachine/am/bloom"
 	"github.com/theapemachine/am/tool"
 	"github.com/theapemachine/wrkspc/tweaker"
 	"github.com/wrk-grp/errnie"
 )
-
-type Element struct {
-	Type string
-	Text string
-}
 
 /*
 runCmd is a proxy for running any terminal command using a container
@@ -30,7 +25,12 @@ var runCmd = &cobra.Command{
 	Long:  runtxt,
 	RunE: func(_ *cobra.Command, _ []string) (err error) {
 		errnie.Trace()
-		client := openai.NewClient()
+
+		// Connect to LLM interfaces so we can send and receive messages.
+		// client := openai.NewClient()
+		client := bloom.NewLLM()
+
+		// Pass the clients to the agent manager so they can be sequenced.
 		manager := agent.NewManager(client)
 		manager.System(tweaker.GetString("prompt.preset.system"))
 
@@ -48,7 +48,6 @@ var runCmd = &cobra.Command{
 				break
 			}
 
-			fmt.Println()
 			chunks := " "
 
 			in := make(map[string]string)
@@ -60,37 +59,20 @@ var runCmd = &cobra.Command{
 			}
 
 			fmt.Println()
-			fmt.Println("ENTITIES:")
-			elements := parseElements(chunks)
-
-			var t agent.Tool
-
-			for _, element := range elements {
-				switch element.Type {
-				case "[SHELL]":
-					t = tool.NewShell(element.Text)
-				case "[SEARCH]":
-					t = tool.NewSearch(element.Text)
-				}
-
-				input = t.Use()
-			}
-
+			input = tool.NewSelect().Pick(parseElements(chunks))
 			fmt.Println(input)
 
 			// cmd := exec.Command("say", chunks)
 			// errnie.Handles(cmd.Run())
-
-			fmt.Println()
 		}
 
 		return nil
 	},
 }
 
-func parseElements(input string) []Element {
+func parseElements(input string) []tool.Element {
 	lines := strings.Split(input, "\n")
-	var elements []Element
+	var elements []tool.Element
 
 	for _, line := range lines {
 		line = strings.TrimSpace(line)
@@ -98,7 +80,7 @@ func parseElements(input string) []Element {
 		if isAction(line) {
 			chunks := strings.Split(line, " ")
 
-			elements = append(elements, Element{
+			elements = append(elements, tool.Element{
 				Type: chunks[0],
 				Text: strings.TrimSpace(strings.Join(chunks[1:], " ")),
 			})
@@ -109,8 +91,6 @@ func parseElements(input string) []Element {
 }
 
 func isAction(line string) bool {
-	errnie.Debugs("isAction <-", line)
-
 	if strings.HasPrefix(line, "[THINK]") ||
 		strings.HasPrefix(line, "[REASON]") ||
 		strings.HasPrefix(line, "[INQUIRE]") ||
